@@ -1,0 +1,102 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  SUPER_ADMIN
+  ADMIN
+}
+
+enum MealType {
+  BREAKFAST
+  LUNCH
+  DINNER
+}
+
+enum NoticeType {
+  NOTICE
+  EVENT
+}
+
+model Complex {
+  id          Int         @id @default(autoincrement())
+  name        String
+  slug        String      @unique
+  cafeterias  Cafeteria[]
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+}
+
+model Cafeteria {
+  id          Int       @id @default(autoincrement())
+  complexId   Int
+  complex     Complex   @relation(fields: [complexId], references: [id])
+  name        String
+  description String?
+  address     String?
+  phone       String?
+  isActive    Boolean   @default(true)
+  admins      Admin[]
+  menus       Menu[]
+  notices     Notice[]
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+model Admin {
+  id           Int        @id @default(autoincrement())
+  cafeteriaId  Int?
+  cafeteria    Cafeteria? @relation(fields: [cafeteriaId], references: [id])
+  username     String     @unique
+  password     String
+  role         Role       @default(ADMIN)
+  isActive     Boolean    @default(true)
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+}
+
+model Menu {
+  id           Int        @id @default(autoincrement())
+  cafeteriaId  Int
+  cafeteria    Cafeteria  @relation(fields: [cafeteriaId], references: [id])
+  date         DateTime   @db.Date
+  mealType     MealType
+  isPublished  Boolean    @default(false)
+  items        MenuItem[]
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  @@unique([cafeteriaId, date, mealType])
+}
+
+model MenuItem {
+  id        Int      @id @default(autoincrement())
+  menuId    Int
+  menu      Menu     @relation(fields: [menuId], references: [id], onDelete: Cascade)
+  name      String
+  price     Int?
+  calories  Int?
+  isMain    Boolean  @default(false)
+  order     Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Notice {
+  id           Int        @id @default(autoincrement())
+  cafeteriaId  Int
+  cafeteria    Cafeteria  @relation(fields: [cafeteriaId], references: [id])
+  title        String
+  content      String
+  type         NoticeType @default(NOTICE)
+  startDate    DateTime?
+  endDate      DateTime?
+  isPublished  Boolean    @default(false)
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+}
