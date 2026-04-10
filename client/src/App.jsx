@@ -1,6 +1,7 @@
 import { Routes, Route, Navigate } from 'react-router-dom'
 import LoginPage from './pages/LoginPage'
 import MenuPage from './pages/MenuPage'
+import NoticePage from './pages/NoticePage'
 
 function PrivateRoute({ children }) {
   const token = localStorage.getItem('accessToken')
@@ -16,6 +17,14 @@ export default function App() {
         element={
           <PrivateRoute>
             <MenuPage />
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/admin/notices"
+        element={
+          <PrivateRoute>
+            <NoticePage />
           </PrivateRoute>
         }
       />

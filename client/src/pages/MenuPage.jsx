@@ -108,9 +108,19 @@ export default function MenuPage() {
       {/* 헤더 */}
       <header className="bg-white border-b px-6 py-4 flex items-center justify-between">
         <h1 className="text-lg font-bold text-gray-800">StillHungry 관리자</h1>
-        <button onClick={handleLogout} className="text-sm text-gray-500 hover:text-red-500 transition">
-          로그아웃
-        </button>
+        <div className="flex items-center gap-4">
+          <nav className="flex gap-3 text-sm">
+            <button className="text-blue-600 font-medium border-b-2 border-blue-600 pb-0.5">
+              메뉴 관리
+            </button>
+            <button onClick={() => navigate('/admin/notices')} className="text-gray-500 hover:text-blue-600 transition">
+              공지/이벤트
+            </button>
+          </nav>
+          <button onClick={handleLogout} className="text-sm text-gray-500 hover:text-red-500 transition">
+            로그아웃
+          </button>
+        </div>
       </header>
 
       <main className="max-w-3xl mx-auto px-4 py-8">
