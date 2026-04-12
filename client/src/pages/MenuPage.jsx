@@ -26,8 +26,9 @@ export default function MenuPage() {
   const [defaultPrices, setDefaultPrices] = useState({})
   const [categories, setCategories] = useState([])
 
-  // 메뉴 등록 폼
+  // 메뉴 등록/수정 폼
   const [showForm, setShowForm] = useState(false)
+  const [editingMenu, setEditingMenu] = useState(null) // null이면 등록, 값이 있으면 수정
   const [form, setForm] = useState({ mealType: 'LUNCH', price: '', image: null, isPublished: false, items: [] })
   const [newItem, setNewItem] = useState({ name: '', calories: '', isMain: false })
   const [imagePreview, setImagePreview] = useState(null)
@@ -112,18 +113,67 @@ export default function MenuPage() {
     setForm((f) => ({ ...f, items: f.items.filter((_, i) => i !== idx) }))
   }
 
+  function closeForm() {
+    setShowForm(false)
+    setEditingMenu(null)
+    setForm({ mealType: 'LUNCH', price: '', image: null, isPublished: false, items: [] })
+    setImagePreview(null)
+    setNewItem({ name: '', calories: '', isMain: false })
+  }
+
+  function openEditForm(menu) {
+    setEditingMenu(menu)
+    setForm({
+      mealType: menu.mealType,
+      price: menu.price != null ? String(menu.price) : '',
+      image: menu.image || null,
+      isPublished: menu.isPublished,
+      items: menu.items.map((item) => ({
+        id: item.id,
+        name: item.name,
+        calories: item.calories,
+        isMain: item.isMain,
+        order: item.order,
+      })),
+    })
+    setImagePreview(menu.image || null)
+    setShowForm(true)
+  }
+
   async function handleSubmit(e) {
     e.preventDefault()
     if (form.items.length === 0) return alert('메뉴 항목을 하나 이상 추가하세요.')
     setSubmitting(true)
     try {
-      await api.post('/admin/menus', { ...form, date, price: form.price ? Number(form.price) : null })
-      setShowForm(false)
-      setForm({ mealType: 'LUNCH', price: '', image: null, isPublished: false, items: [] })
-      setImagePreview(null)
+      if (editingMenu) {
+        // 수정: 메뉴 헤더 업데이트
+        await api.put(`/admin/menus/${editingMenu.id}`, {
+          mealType: form.mealType,
+          price: form.price ? Number(form.price) : null,
+          image: form.image,
+          isPublished: form.isPublished,
+        })
+        // 기존 항목 전부 삭제
+        for (const item of editingMenu.items) {
+          await api.delete(`/admin/menus/${editingMenu.id}/items/${item.id}`)
+        }
+        // 새 항목 추가
+        for (const item of form.items) {
+          await api.post(`/admin/menus/${editingMenu.id}/items`, {
+            name: item.name,
+            calories: item.calories,
+            isMain: item.isMain,
+            order: item.order,
+          })
+        }
+      } else {
+        // 신규 등록
+        await api.post('/admin/menus', { ...form, date, price: form.price ? Number(form.price) : null })
+      }
+      closeForm()
       fetchMenus()
     } catch (err) {
-      alert(err.response?.data?.message || '등록에 실패했습니다.')
+      alert(err.response?.data?.message || (editingMenu ? '수정에 실패했습니다.' : '등록에 실패했습니다.'))
     } finally {
       setSubmitting(false)
     }
@@ -191,7 +241,9 @@ export default function MenuPage() {
           <button
             onClick={() => {
               const defaultPrice = defaultPrices[DEFAULT_PRICE_KEY['LUNCH']] ?? ''
-              setForm({ mealType: 'LUNCH', price: defaultPrice !== null ? String(defaultPrice) : '', isPublished: false, items: [] })
+              setEditingMenu(null)
+              setForm({ mealType: 'LUNCH', price: defaultPrice != null ? String(defaultPrice) : '', image: null, isPublished: false, items: [] })
+              setImagePreview(null)
               setShowForm(true)
             }}
             className="bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium px-4 py-2 rounded-lg transition"
@@ -236,6 +288,12 @@ export default function MenuPage() {
                         {menu.isPublished ? '공개 중' : '비공개'}
                       </button>
                       <button
+                        onClick={() => openEditForm(menu)}
+                        className="text-xs text-blue-400 hover:text-blue-600 transition"
+                      >
+                        수정
+                      </button>
+                      <button
                         onClick={() => deleteMenu(menu.id)}
                         className="text-xs text-red-400 hover:text-red-600 transition"
                       >
@@ -276,19 +334,20 @@ export default function MenuPage() {
       {showForm && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 px-4">
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg max-h-[90vh] overflow-y-auto p-6">
-            <h2 className="text-lg font-bold text-gray-800 mb-5">메뉴 등록</h2>
+            <h2 className="text-lg font-bold text-gray-800 mb-5">{editingMenu ? '메뉴 수정' : '메뉴 등록'}</h2>
             <form onSubmit={handleSubmit} className="space-y-5">
               {/* 식사 유형 */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">식사 유형</label>
                 <select
                   value={form.mealType}
+                  disabled={!!editingMenu}
                   onChange={(e) => {
                     const mealType = e.target.value
                     const defaultPrice = defaultPrices[DEFAULT_PRICE_KEY[mealType]]
                     setForm({ ...form, mealType, price: defaultPrice != null ? String(defaultPrice) : '' })
                   }}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-50 disabled:text-gray-400"
                 >
                   {MEAL_TYPES.map((mt) => (
                     <option key={mt.value} value={mt.value}>{mt.label}</option>
@@ -467,7 +526,7 @@ export default function MenuPage() {
               <div className="flex gap-3 pt-2">
                 <button
                   type="button"
-                  onClick={() => { setShowForm(false); setImagePreview(null) }}
+                  onClick={closeForm}
                   className="flex-1 border border-gray-300 text-gray-700 py-2 rounded-lg text-sm hover:bg-gray-50 transition"
                 >
                   취소
@@ -477,7 +536,7 @@ export default function MenuPage() {
                   disabled={submitting}
                   className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-300 text-white py-2 rounded-lg text-sm font-medium transition"
                 >
-                  {submitting ? '등록 중...' : '등록'}
+                  {submitting ? (editingMenu ? '수정 중...' : '등록 중...') : (editingMenu ? '수정' : '등록')}
                 </button>
               </div>
             </form>
