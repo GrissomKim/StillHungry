@@ -40,7 +40,12 @@ function FavoriteCard({ cafeteriaId, navigate }) {
       className="w-full bg-white rounded-2xl border shadow-sm p-4 text-left hover:border-blue-400 hover:shadow-md transition"
     >
       <div className="flex items-center justify-between mb-3">
-        <p className="font-semibold text-gray-800">{cafeteria?.name}</p>
+        <div>
+          <p className="font-semibold text-gray-800">{cafeteria?.name}</p>
+          {cafeteria?.complex && (
+            <p className="text-xs text-gray-400 mt-0.5">{cafeteria.complex.name}</p>
+          )}
+        </div>
         <span className="text-gray-300 text-lg">›</span>
       </div>
 

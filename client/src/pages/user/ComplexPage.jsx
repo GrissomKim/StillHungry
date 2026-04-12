@@ -32,12 +32,19 @@ export default function ComplexPage() {
         >
           ‹
         </button>
-        <div>
+        <div className="flex-1">
           <h1 className="text-base font-bold text-gray-900">
             {complex ? complex.name : '식당 목록'}
           </h1>
           <p className="text-xs text-gray-400 mt-0.5">식당을 선택하세요</p>
         </div>
+        <button
+          onClick={() => navigate('/')}
+          className="text-gray-400 hover:text-gray-700 transition text-lg leading-none"
+          aria-label="홈으로"
+        >
+          🏠
+        </button>
       </header>
 
       <main className="max-w-xl mx-auto px-4 py-6">

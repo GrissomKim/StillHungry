@@ -83,6 +83,13 @@ export default function CafeteriaPage() {
           )}
         </div>
         <button
+          onClick={() => navigate('/')}
+          className="text-gray-400 hover:text-gray-700 transition text-lg leading-none"
+          aria-label="홈으로"
+        >
+          🏠
+        </button>
+        <button
           onClick={() => toggleFavorite(cafId)}
           className="text-2xl leading-none transition-transform active:scale-90"
           aria-label={isFavorite(cafId) ? '즐겨찾기 해제' : '즐겨찾기 추가'}

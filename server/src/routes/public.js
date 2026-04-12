@@ -42,6 +42,7 @@ router.get('/cafeterias/:id', async (req, res, next) => {
   try {
     const cafeteria = await prisma.cafeteria.findUnique({
       where: { id: Number(req.params.id) },
+      include: { complex: { select: { id: true, name: true } } },
     });
     if (!cafeteria) return res.status(404).json({ success: false, message: 'Not found' });
     res.json({ success: true, data: cafeteria });
