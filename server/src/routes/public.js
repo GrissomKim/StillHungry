@@ -10,6 +10,22 @@ router.get('/complexes', async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+// 전체 식당 검색 (?q=검색어)
+router.get('/cafeterias', async (req, res, next) => {
+  try {
+    const q = req.query.q?.trim();
+    const cafeterias = await prisma.cafeteria.findMany({
+      where: {
+        isActive: true,
+        ...(q ? { name: { contains: q, mode: 'insensitive' } } : {}),
+      },
+      include: { complex: { select: { id: true, name: true } } },
+      orderBy: [{ complexId: 'asc' }, { name: 'asc' }],
+    });
+    res.json({ success: true, data: cafeterias });
+  } catch (err) { next(err); }
+});
+
 // 단지별 식당 목록
 router.get('/complexes/:id/cafeterias', async (req, res, next) => {
   try {
