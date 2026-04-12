@@ -1,254 +1,158 @@
 const router = require('express').Router();
-const { PrismaClient } = require('@prisma/client');
 const { authenticate } = require('../middleware/auth');
-
-const prisma = new PrismaClient();
+const menuService      = require('../services/menuService');
+const noticeService    = require('../services/noticeService');
+const cafeteriaService = require('../services/cafeteriaService');
+const categoryService  = require('../services/categoryService');
 
 router.use(authenticate);
 
-// 내 식당 메뉴 목록
+// ── 메뉴 ──────────────────────────────────────────
+
 router.get('/menus', async (req, res, next) => {
   try {
-    const menus = await prisma.menu.findMany({
-      where: { cafeteriaId: req.admin.cafeteriaId },
-      include: { items: { orderBy: { order: 'asc' } } },
-      orderBy: [{ date: 'desc' }, { mealType: 'asc' }],
-    });
-    res.json({ success: true, data: menus });
+    const data = await menuService.getMenusByCafeteria(req.admin.cafeteriaId);
+    res.json({ success: true, data });
   } catch (err) { next(err); }
 });
 
-// 메뉴 등록
 router.post('/menus', async (req, res, next) => {
   try {
-    const { date, mealType, price, isPublished, items } = req.body;
-    const menu = await prisma.menu.create({
-      data: {
-        cafeteriaId: req.admin.cafeteriaId,
-        date: new Date(date),
-        mealType,
-        price: price ? Number(price) : null,
-        isPublished: isPublished ?? false,
-        items: { create: items || [] },
-      },
-      include: { items: true },
-    });
-    res.status(201).json({ success: true, data: menu });
+    const data = await menuService.createMenu(req.admin.cafeteriaId, req.body);
+    res.status(201).json({ success: true, data });
   } catch (err) { next(err); }
 });
 
-// 메뉴 수정
 router.put('/menus/:id', async (req, res, next) => {
   try {
-    const { isPublished, mealType, price } = req.body;
-    const data = {};
-    if (isPublished !== undefined) data.isPublished = isPublished;
-    if (mealType !== undefined) data.mealType = mealType;
-    if (price !== undefined) data.price = price ? Number(price) : null;
-    const menu = await prisma.menu.updateMany({
-      where: { id: Number(req.params.id), cafeteriaId: req.admin.cafeteriaId },
-      data,
-    });
-    res.json({ success: true, data: menu });
+    const data = await menuService.updateMenu(Number(req.params.id), req.admin.cafeteriaId, req.body);
+    res.json({ success: true, data });
   } catch (err) { next(err); }
 });
 
-// 메뉴 삭제
 router.delete('/menus/:id', async (req, res, next) => {
   try {
-    await prisma.menu.deleteMany({
-      where: { id: Number(req.params.id), cafeteriaId: req.admin.cafeteriaId },
-    });
+    await menuService.deleteMenu(Number(req.params.id), req.admin.cafeteriaId);
     res.json({ success: true });
   } catch (err) { next(err); }
 });
 
-// 메뉴 항목 추가
+// ── 메뉴 항목 ─────────────────────────────────────
+
 router.post('/menus/:id/items', async (req, res, next) => {
   try {
-    const item = await prisma.menuItem.create({
-      data: { menuId: Number(req.params.id), ...req.body },
-    });
-    res.status(201).json({ success: true, data: item });
+    const data = await menuService.addMenuItem(Number(req.params.id), req.body);
+    res.status(201).json({ success: true, data });
   } catch (err) { next(err); }
 });
 
-// 메뉴 항목 수정
 router.put('/menus/:menuId/items/:itemId', async (req, res, next) => {
   try {
-    const item = await prisma.menuItem.update({
-      where: { id: Number(req.params.itemId) },
-      data: req.body,
-    });
-    res.json({ success: true, data: item });
+    const data = await menuService.updateMenuItem(Number(req.params.itemId), req.body);
+    res.json({ success: true, data });
   } catch (err) { next(err); }
 });
 
-// 메뉴 항목 삭제
 router.delete('/menus/:menuId/items/:itemId', async (req, res, next) => {
   try {
-    await prisma.menuItem.delete({ where: { id: Number(req.params.itemId) } });
+    await menuService.deleteMenuItem(Number(req.params.itemId));
     res.json({ success: true });
   } catch (err) { next(err); }
 });
 
-// 카테고리 목록 (음식 항목 포함)
+// ── 카테고리 ──────────────────────────────────────
+
 router.get('/categories', async (req, res, next) => {
   try {
-    const categories = await prisma.category.findMany({
-      where: { cafeteriaId: req.admin.cafeteriaId },
-      include: { items: { orderBy: { order: 'asc' } } },
-      orderBy: { order: 'asc' },
-    });
-    res.json({ success: true, data: categories });
+    const data = await categoryService.getCategories(req.admin.cafeteriaId);
+    res.json({ success: true, data });
   } catch (err) { next(err); }
 });
 
-// 카테고리 등록
 router.post('/categories', async (req, res, next) => {
   try {
-    const { name, order } = req.body;
-    const category = await prisma.category.create({
-      data: { cafeteriaId: req.admin.cafeteriaId, name, order: order ?? 0 },
-      include: { items: true },
-    });
-    res.status(201).json({ success: true, data: category });
+    const data = await categoryService.createCategory(req.admin.cafeteriaId, req.body);
+    res.status(201).json({ success: true, data });
   } catch (err) { next(err); }
 });
 
-// 카테고리 수정
 router.put('/categories/:id', async (req, res, next) => {
   try {
-    const { name, order } = req.body;
-    const category = await prisma.category.updateMany({
-      where: { id: Number(req.params.id), cafeteriaId: req.admin.cafeteriaId },
-      data: { name, order },
-    });
-    res.json({ success: true, data: category });
+    const data = await categoryService.updateCategory(Number(req.params.id), req.admin.cafeteriaId, req.body);
+    res.json({ success: true, data });
   } catch (err) { next(err); }
 });
 
-// 카테고리 삭제 (음식 항목 cascade)
 router.delete('/categories/:id', async (req, res, next) => {
   try {
-    await prisma.category.deleteMany({
-      where: { id: Number(req.params.id), cafeteriaId: req.admin.cafeteriaId },
-    });
+    await categoryService.deleteCategory(Number(req.params.id), req.admin.cafeteriaId);
     res.json({ success: true });
   } catch (err) { next(err); }
 });
 
-// 카테고리 음식 항목 등록
 router.post('/categories/:id/items', async (req, res, next) => {
   try {
-    const { name, calories, isMain, order } = req.body;
-    // 해당 카테고리가 내 식당 소속인지 확인
-    const category = await prisma.category.findFirst({
-      where: { id: Number(req.params.id), cafeteriaId: req.admin.cafeteriaId },
-    });
-    if (!category) return res.status(404).json({ success: false, message: 'Not found' });
-    const item = await prisma.categoryItem.create({
-      data: { categoryId: Number(req.params.id), name, calories: calories ?? null, isMain: isMain ?? false, order: order ?? 0 },
-    });
-    res.status(201).json({ success: true, data: item });
+    const data = await categoryService.addCategoryItem(Number(req.params.id), req.admin.cafeteriaId, req.body);
+    res.status(201).json({ success: true, data });
   } catch (err) { next(err); }
 });
 
-// 카테고리 음식 항목 수정
 router.put('/categories/:categoryId/items/:itemId', async (req, res, next) => {
   try {
-    const { name, calories, isMain, order } = req.body;
-    const item = await prisma.categoryItem.update({
-      where: { id: Number(req.params.itemId) },
-      data: { name, calories: calories ?? null, isMain: isMain ?? false, order },
-    });
-    res.json({ success: true, data: item });
+    const data = await categoryService.updateCategoryItem(Number(req.params.itemId), req.body);
+    res.json({ success: true, data });
   } catch (err) { next(err); }
 });
 
-// 카테고리 음식 항목 삭제
 router.delete('/categories/:categoryId/items/:itemId', async (req, res, next) => {
   try {
-    await prisma.categoryItem.delete({ where: { id: Number(req.params.itemId) } });
+    await categoryService.deleteCategoryItem(Number(req.params.itemId));
     res.json({ success: true });
   } catch (err) { next(err); }
 });
 
-// 식당 설정 조회
+// ── 식당 설정 ─────────────────────────────────────
+
 router.get('/cafeteria', async (req, res, next) => {
   try {
-    const cafeteria = await prisma.cafeteria.findUnique({
-      where: { id: req.admin.cafeteriaId },
-      select: {
-        id: true,
-        name: true,
-        description: true,
-        address: true,
-        phone: true,
-        defaultBreakfastPrice: true,
-        defaultLunchPrice: true,
-        defaultDinnerPrice: true,
-      },
-    });
-    if (!cafeteria) return res.status(404).json({ success: false, message: 'Not found' });
-    res.json({ success: true, data: cafeteria });
+    const data = await cafeteriaService.getCafeteriaSettings(req.admin.cafeteriaId);
+    res.json({ success: true, data });
   } catch (err) { next(err); }
 });
 
-// 식당 설정 수정
 router.put('/cafeteria', async (req, res, next) => {
   try {
-    const { defaultBreakfastPrice, defaultLunchPrice, defaultDinnerPrice } = req.body;
-    const cafeteria = await prisma.cafeteria.update({
-      where: { id: req.admin.cafeteriaId },
-      data: {
-        defaultBreakfastPrice: defaultBreakfastPrice != null ? Number(defaultBreakfastPrice) : null,
-        defaultLunchPrice: defaultLunchPrice != null ? Number(defaultLunchPrice) : null,
-        defaultDinnerPrice: defaultDinnerPrice != null ? Number(defaultDinnerPrice) : null,
-      },
-    });
-    res.json({ success: true, data: cafeteria });
+    const data = await cafeteriaService.updateCafeteriaSettings(req.admin.cafeteriaId, req.body);
+    res.json({ success: true, data });
   } catch (err) { next(err); }
 });
 
-// 공지 목록
+// ── 공지/이벤트 ───────────────────────────────────
+
 router.get('/notices', async (req, res, next) => {
   try {
-    const notices = await prisma.notice.findMany({
-      where: { cafeteriaId: req.admin.cafeteriaId },
-      orderBy: { createdAt: 'desc' },
-    });
-    res.json({ success: true, data: notices });
+    const data = await noticeService.getNoticesByCafeteria(req.admin.cafeteriaId);
+    res.json({ success: true, data });
   } catch (err) { next(err); }
 });
 
-// 공지 등록
 router.post('/notices', async (req, res, next) => {
   try {
-    const notice = await prisma.notice.create({
-      data: { cafeteriaId: req.admin.cafeteriaId, ...req.body },
-    });
-    res.status(201).json({ success: true, data: notice });
+    const data = await noticeService.createNotice(req.admin.cafeteriaId, req.body);
+    res.status(201).json({ success: true, data });
   } catch (err) { next(err); }
 });
 
-// 공지 수정
 router.put('/notices/:id', async (req, res, next) => {
   try {
-    const notice = await prisma.notice.updateMany({
-      where: { id: Number(req.params.id), cafeteriaId: req.admin.cafeteriaId },
-      data: req.body,
-    });
-    res.json({ success: true, data: notice });
+    const data = await noticeService.updateNotice(Number(req.params.id), req.admin.cafeteriaId, req.body);
+    res.json({ success: true, data });
   } catch (err) { next(err); }
 });
 
-// 공지 삭제
 router.delete('/notices/:id', async (req, res, next) => {
   try {
-    await prisma.notice.deleteMany({
-      where: { id: Number(req.params.id), cafeteriaId: req.admin.cafeteriaId },
-    });
+    await noticeService.deleteNotice(Number(req.params.id), req.admin.cafeteriaId);
     res.json({ success: true });
   } catch (err) { next(err); }
 });
