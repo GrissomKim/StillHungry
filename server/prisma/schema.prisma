@@ -71,6 +71,7 @@ model Menu {
   date         DateTime   @db.Date
   mealType     MealType
   price        Int?
+  image        String?
   isPublished  Boolean    @default(false)
   items        MenuItem[]
   createdAt    DateTime   @default(now())

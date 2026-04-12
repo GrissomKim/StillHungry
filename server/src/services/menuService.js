@@ -10,13 +10,14 @@ async function getMenusByCafeteria(cafeteriaId) {
   });
 }
 
-async function createMenu(cafeteriaId, { date, mealType, price, isPublished, items }) {
+async function createMenu(cafeteriaId, { date, mealType, price, image, isPublished, items }) {
   return prisma.menu.create({
     data: {
       cafeteriaId,
       date: new Date(date),
       mealType,
       price: price ? Number(price) : null,
+      image: image || null,
       isPublished: isPublished ?? false,
       items: { create: items || [] },
     },
@@ -25,11 +26,12 @@ async function createMenu(cafeteriaId, { date, mealType, price, isPublished, ite
 }
 
 async function updateMenu(id, cafeteriaId, body) {
-  const { isPublished, mealType, price } = body;
+  const { isPublished, mealType, price, image } = body;
   const data = {};
   if (isPublished !== undefined) data.isPublished = isPublished;
-  if (mealType   !== undefined) data.mealType     = mealType;
-  if (price      !== undefined) data.price        = price ? Number(price) : null;
+  if (mealType    !== undefined) data.mealType    = mealType;
+  if (price       !== undefined) data.price       = price ? Number(price) : null;
+  if (image       !== undefined) data.image       = image || null;
   return prisma.menu.updateMany({
     where: { id, cafeteriaId },
     data,

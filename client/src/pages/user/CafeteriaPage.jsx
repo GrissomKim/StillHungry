@@ -176,6 +176,13 @@ export default function CafeteriaPage() {
                           </span>
                         )}
                       </div>
+                      {menu.image && (
+                        <img
+                          src={menu.image}
+                          alt="메뉴 사진"
+                          className="w-full rounded-xl object-cover max-h-48 mb-3"
+                        />
+                      )}
                       <ul className="space-y-2">
                         {menu.items.map((item) => (
                           <li key={item.id} className="flex items-center justify-between">

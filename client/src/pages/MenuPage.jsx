@@ -28,8 +28,9 @@ export default function MenuPage() {
 
   // 메뉴 등록 폼
   const [showForm, setShowForm] = useState(false)
-  const [form, setForm] = useState({ mealType: 'LUNCH', price: '', isPublished: false, items: [] })
+  const [form, setForm] = useState({ mealType: 'LUNCH', price: '', image: null, isPublished: false, items: [] })
   const [newItem, setNewItem] = useState({ name: '', calories: '', isMain: false })
+  const [imagePreview, setImagePreview] = useState(null)
   const [submitting, setSubmitting] = useState(false)
 
   useEffect(() => {
@@ -53,6 +54,41 @@ export default function MenuPage() {
     } finally {
       setLoading(false)
     }
+  }
+
+  function resizeAndEncodeImage(file) {
+    return new Promise((resolve) => {
+      const img = new Image()
+      const url = URL.createObjectURL(file)
+      img.onload = () => {
+        URL.revokeObjectURL(url)
+        const MAX = 800
+        let { width, height } = img
+        if (width > MAX || height > MAX) {
+          if (width > height) { height = Math.round(height * MAX / width); width = MAX }
+          else                { width  = Math.round(width  * MAX / height); height = MAX }
+        }
+        const canvas = document.createElement('canvas')
+        canvas.width  = width
+        canvas.height = height
+        canvas.getContext('2d').drawImage(img, 0, 0, width, height)
+        resolve(canvas.toDataURL('image/jpeg', 0.7))
+      }
+      img.src = url
+    })
+  }
+
+  async function handleImageChange(e) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    const base64 = await resizeAndEncodeImage(file)
+    setForm((f) => ({ ...f, image: base64 }))
+    setImagePreview(base64)
+  }
+
+  function removeImage() {
+    setForm((f) => ({ ...f, image: null }))
+    setImagePreview(null)
   }
 
   function addItem() {
@@ -83,7 +119,8 @@ export default function MenuPage() {
     try {
       await api.post('/admin/menus', { ...form, date, price: form.price ? Number(form.price) : null })
       setShowForm(false)
-      setForm({ mealType: 'LUNCH', price: '', isPublished: false, items: [] })
+      setForm({ mealType: 'LUNCH', price: '', image: null, isPublished: false, items: [] })
+      setImagePreview(null)
       fetchMenus()
     } catch (err) {
       alert(err.response?.data?.message || '등록에 실패했습니다.')
@@ -206,6 +243,13 @@ export default function MenuPage() {
                       </button>
                     </div>
                   </div>
+                  {menu.image && (
+                    <img
+                      src={menu.image}
+                      alt="메뉴 사진"
+                      className="w-full rounded-xl object-cover max-h-40 mb-3"
+                    />
+                  )}
                   <ul className="space-y-1">
                     {menu.items.map((item) => (
                       <li key={item.id} className="flex items-center justify-between text-sm">
@@ -263,6 +307,42 @@ export default function MenuPage() {
                   className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
+
+              {/* 대표 사진 (중식만) */}
+              {form.mealType === 'LUNCH' && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    대표 사진 <span className="text-gray-400 font-normal">(선택)</span>
+                  </label>
+                  {imagePreview ? (
+                    <div className="relative">
+                      <img
+                        src={imagePreview}
+                        alt="미리보기"
+                        className="w-full rounded-xl object-cover max-h-48"
+                      />
+                      <button
+                        type="button"
+                        onClick={removeImage}
+                        className="absolute top-2 right-2 bg-black/50 text-white text-xs rounded-full w-6 h-6 flex items-center justify-center hover:bg-black/70 transition"
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  ) : (
+                    <label className="flex flex-col items-center justify-center w-full h-28 border-2 border-dashed border-gray-200 rounded-xl cursor-pointer hover:border-blue-300 hover:bg-blue-50 transition">
+                      <span className="text-2xl mb-1">📷</span>
+                      <span className="text-xs text-gray-400">사진을 선택하세요</span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={handleImageChange}
+                      />
+                    </label>
+                  )}
+                </div>
+              )}
 
               {/* 카테고리에서 선택 */}
               {categories.length > 0 && (
@@ -387,7 +467,7 @@ export default function MenuPage() {
               <div className="flex gap-3 pt-2">
                 <button
                   type="button"
-                  onClick={() => setShowForm(false)}
+                  onClick={() => { setShowForm(false); setImagePreview(null) }}
                   className="flex-1 border border-gray-300 text-gray-700 py-2 rounded-lg text-sm hover:bg-gray-50 transition"
                 >
                   취소
