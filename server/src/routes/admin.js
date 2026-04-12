@@ -92,6 +92,43 @@ router.delete('/menus/:menuId/items/:itemId', async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+// 식당 설정 조회
+router.get('/cafeteria', async (req, res, next) => {
+  try {
+    const cafeteria = await prisma.cafeteria.findUnique({
+      where: { id: req.admin.cafeteriaId },
+      select: {
+        id: true,
+        name: true,
+        description: true,
+        address: true,
+        phone: true,
+        defaultBreakfastPrice: true,
+        defaultLunchPrice: true,
+        defaultDinnerPrice: true,
+      },
+    });
+    if (!cafeteria) return res.status(404).json({ success: false, message: 'Not found' });
+    res.json({ success: true, data: cafeteria });
+  } catch (err) { next(err); }
+});
+
+// 식당 설정 수정
+router.put('/cafeteria', async (req, res, next) => {
+  try {
+    const { defaultBreakfastPrice, defaultLunchPrice, defaultDinnerPrice } = req.body;
+    const cafeteria = await prisma.cafeteria.update({
+      where: { id: req.admin.cafeteriaId },
+      data: {
+        defaultBreakfastPrice: defaultBreakfastPrice != null ? Number(defaultBreakfastPrice) : null,
+        defaultLunchPrice: defaultLunchPrice != null ? Number(defaultLunchPrice) : null,
+        defaultDinnerPrice: defaultDinnerPrice != null ? Number(defaultDinnerPrice) : null,
+      },
+    });
+    res.json({ success: true, data: cafeteria });
+  } catch (err) { next(err); }
+});
+
 // 공지 목록
 router.get('/notices', async (req, res, next) => {
   try {

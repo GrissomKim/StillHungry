@@ -117,6 +117,9 @@ export default function NoticePage() {
             <button className="text-blue-600 font-medium border-b-2 border-blue-600 pb-0.5">
               공지/이벤트
             </button>
+            <button onClick={() => navigate('/admin/settings')} className="text-gray-500 hover:text-blue-600 transition">
+              식당 설정
+            </button>
           </nav>
           <button onClick={handleLogout} className="text-sm text-gray-500 hover:text-red-500 transition">
             로그아웃

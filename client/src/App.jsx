@@ -2,6 +2,7 @@ import { Routes, Route, Navigate } from 'react-router-dom'
 import LoginPage from './pages/LoginPage'
 import MenuPage from './pages/MenuPage'
 import NoticePage from './pages/NoticePage'
+import SettingsPage from './pages/SettingsPage'
 import HomePage from './pages/user/HomePage'
 import ComplexPage from './pages/user/ComplexPage'
 import CafeteriaPage from './pages/user/CafeteriaPage'
@@ -21,6 +22,14 @@ export default function App() {
 
       {/* 어드민 페이지 */}
       <Route path="/login" element={<LoginPage />} />
+      <Route
+        path="/admin/settings"
+        element={
+          <PrivateRoute>
+            <SettingsPage />
+          </PrivateRoute>
+        }
+      />
       <Route
         path="/admin/menus"
         element={

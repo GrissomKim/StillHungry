@@ -33,19 +33,22 @@ model Complex {
 }
 
 model Cafeteria {
-  id          Int       @id @default(autoincrement())
-  complexId   Int
-  complex     Complex   @relation(fields: [complexId], references: [id])
-  name        String
-  description String?
-  address     String?
-  phone       String?
-  isActive    Boolean   @default(true)
-  admins      Admin[]
-  menus       Menu[]
-  notices     Notice[]
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  id                    Int       @id @default(autoincrement())
+  complexId             Int
+  complex               Complex   @relation(fields: [complexId], references: [id])
+  name                  String
+  description           String?
+  address               String?
+  phone                 String?
+  isActive              Boolean   @default(true)
+  defaultBreakfastPrice Int?
+  defaultLunchPrice     Int?
+  defaultDinnerPrice    Int?
+  admins                Admin[]
+  menus                 Menu[]
+  notices               Notice[]
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
 }
 
 model Admin {

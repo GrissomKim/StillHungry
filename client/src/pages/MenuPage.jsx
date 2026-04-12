@@ -12,11 +12,18 @@ function today() {
   return new Date().toISOString().slice(0, 10)
 }
 
+const DEFAULT_PRICE_KEY = {
+  BREAKFAST: 'defaultBreakfastPrice',
+  LUNCH: 'defaultLunchPrice',
+  DINNER: 'defaultDinnerPrice',
+}
+
 export default function MenuPage() {
   const navigate = useNavigate()
   const [date, setDate] = useState(today())
   const [menus, setMenus] = useState([])
   const [loading, setLoading] = useState(false)
+  const [defaultPrices, setDefaultPrices] = useState({})
 
   // 메뉴 등록 폼
   const [showForm, setShowForm] = useState(false)
@@ -26,6 +33,9 @@ export default function MenuPage() {
 
   useEffect(() => {
     fetchMenus()
+    api.get('/admin/cafeteria')
+      .then(({ data }) => setDefaultPrices(data.data))
+      .catch(() => {})
   }, [date])
 
   async function fetchMenus() {
@@ -115,6 +125,9 @@ export default function MenuPage() {
             <button onClick={() => navigate('/admin/notices')} className="text-gray-500 hover:text-blue-600 transition">
               공지/이벤트
             </button>
+            <button onClick={() => navigate('/admin/settings')} className="text-gray-500 hover:text-blue-600 transition">
+              식당 설정
+            </button>
           </nav>
           <button onClick={handleLogout} className="text-sm text-gray-500 hover:text-red-500 transition">
             로그아웃
@@ -135,7 +148,11 @@ export default function MenuPage() {
             />
           </div>
           <button
-            onClick={() => setShowForm(true)}
+            onClick={() => {
+              const defaultPrice = defaultPrices[DEFAULT_PRICE_KEY['LUNCH']] ?? ''
+              setForm({ mealType: 'LUNCH', price: defaultPrice !== null ? String(defaultPrice) : '', isPublished: false, items: [] })
+              setShowForm(true)
+            }}
             className="bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium px-4 py-2 rounded-lg transition"
           >
             + 메뉴 등록
@@ -218,7 +235,11 @@ export default function MenuPage() {
                 <label className="block text-sm font-medium text-gray-700 mb-1">식사 유형</label>
                 <select
                   value={form.mealType}
-                  onChange={(e) => setForm({ ...form, mealType: e.target.value })}
+                  onChange={(e) => {
+                    const mealType = e.target.value
+                    const defaultPrice = defaultPrices[DEFAULT_PRICE_KEY[mealType]]
+                    setForm({ ...form, mealType, price: defaultPrice != null ? String(defaultPrice) : '' })
+                  }}
                   className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
                   {MEAL_TYPES.map((mt) => (
