@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import api from '../../api/client'
+import { useFavorites } from '../../hooks/useFavorites'
 
 const MEAL_TYPES = [
   { value: 'BREAKFAST', label: '조식' },
@@ -22,6 +23,9 @@ function formatDate(dateStr) {
 export default function CafeteriaPage() {
   const { id } = useParams()
   const navigate = useNavigate()
+
+  const { toggleFavorite, isFavorite } = useFavorites()
+  const cafId = Number(id)
 
   const [cafeteria, setCafeteria] = useState(null)
   const [tab, setTab] = useState('menu') // 'menu' | 'notice'
@@ -70,7 +74,7 @@ export default function CafeteriaPage() {
         >
           ‹
         </button>
-        <div>
+        <div className="flex-1">
           <h1 className="text-base font-bold text-gray-900">
             {cafeteria ? cafeteria.name : '식당'}
           </h1>
@@ -78,6 +82,13 @@ export default function CafeteriaPage() {
             <p className="text-xs text-gray-400 mt-0.5">📍 {cafeteria.address}</p>
           )}
         </div>
+        <button
+          onClick={() => toggleFavorite(cafId)}
+          className="text-2xl leading-none transition-transform active:scale-90"
+          aria-label={isFavorite(cafId) ? '즐겨찾기 해제' : '즐겨찾기 추가'}
+        >
+          {isFavorite(cafId) ? '❤️' : '🤍'}
+        </button>
       </header>
 
       {/* 탭 */}
