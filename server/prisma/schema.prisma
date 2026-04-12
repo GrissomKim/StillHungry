@@ -66,6 +66,7 @@ model Menu {
   cafeteria    Cafeteria  @relation(fields: [cafeteriaId], references: [id])
   date         DateTime   @db.Date
   mealType     MealType
+  price        Int?
   isPublished  Boolean    @default(false)
   items        MenuItem[]
   createdAt    DateTime   @default(now())

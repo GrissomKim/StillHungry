@@ -21,12 +21,13 @@ router.get('/menus', async (req, res, next) => {
 // 메뉴 등록
 router.post('/menus', async (req, res, next) => {
   try {
-    const { date, mealType, isPublished, items } = req.body;
+    const { date, mealType, price, isPublished, items } = req.body;
     const menu = await prisma.menu.create({
       data: {
         cafeteriaId: req.admin.cafeteriaId,
         date: new Date(date),
         mealType,
+        price: price ? Number(price) : null,
         isPublished: isPublished ?? false,
         items: { create: items || [] },
       },
@@ -39,10 +40,14 @@ router.post('/menus', async (req, res, next) => {
 // 메뉴 수정
 router.put('/menus/:id', async (req, res, next) => {
   try {
-    const { isPublished, mealType } = req.body;
+    const { isPublished, mealType, price } = req.body;
+    const data = {};
+    if (isPublished !== undefined) data.isPublished = isPublished;
+    if (mealType !== undefined) data.mealType = mealType;
+    if (price !== undefined) data.price = price ? Number(price) : null;
     const menu = await prisma.menu.updateMany({
       where: { id: Number(req.params.id), cafeteriaId: req.admin.cafeteriaId },
-      data: { isPublished, mealType },
+      data,
     });
     res.json({ success: true, data: menu });
   } catch (err) { next(err); }

@@ -148,9 +148,16 @@ export default function CafeteriaPage() {
                   if (!menu) return null
                   return (
                     <div key={mt.value} className="bg-white rounded-2xl border shadow-sm p-5">
-                      <p className="text-xs font-semibold text-blue-500 uppercase mb-3">
-                        {mt.label}
-                      </p>
+                      <div className="flex items-center gap-2 mb-3">
+                        <p className="text-xs font-semibold text-blue-500 uppercase">
+                          {mt.label}
+                        </p>
+                        {menu.price && (
+                          <span className="text-xs font-semibold text-gray-700 bg-gray-100 rounded-full px-2 py-0.5">
+                            {menu.price.toLocaleString()}원
+                          </span>
+                        )}
+                      </div>
                       <ul className="space-y-2">
                         {menu.items.map((item) => (
                           <li key={item.id} className="flex items-center justify-between">
@@ -166,16 +173,11 @@ export default function CafeteriaPage() {
                               )}
                               {item.name}
                             </span>
-                            <div className="flex items-center gap-2 text-xs text-gray-400">
-                              {item.price && (
-                                <span>{item.price.toLocaleString()}원</span>
-                              )}
-                              {item.calories && (
-                                <span className="bg-gray-100 rounded px-1.5 py-0.5">
-                                  {item.calories}kcal
-                                </span>
-                              )}
-                            </div>
+                            {item.calories && (
+                              <span className="text-xs text-gray-400 bg-gray-100 rounded px-1.5 py-0.5">
+                                {item.calories}kcal
+                              </span>
+                            )}
                           </li>
                         ))}
                       </ul>

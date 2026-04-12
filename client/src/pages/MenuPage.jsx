@@ -20,8 +20,8 @@ export default function MenuPage() {
 
   // 메뉴 등록 폼
   const [showForm, setShowForm] = useState(false)
-  const [form, setForm] = useState({ mealType: 'LUNCH', isPublished: false, items: [] })
-  const [newItem, setNewItem] = useState({ name: '', price: '', calories: '', isMain: false })
+  const [form, setForm] = useState({ mealType: 'LUNCH', price: '', isPublished: false, items: [] })
+  const [newItem, setNewItem] = useState({ name: '', calories: '', isMain: false })
   const [submitting, setSubmitting] = useState(false)
 
   useEffect(() => {
@@ -49,14 +49,13 @@ export default function MenuPage() {
         ...f.items,
         {
           name: newItem.name.trim(),
-          price: newItem.price ? Number(newItem.price) : null,
           calories: newItem.calories ? Number(newItem.calories) : null,
           isMain: newItem.isMain,
           order: f.items.length,
         },
       ],
     }))
-    setNewItem({ name: '', price: '', calories: '', isMain: false })
+    setNewItem({ name: '', calories: '', isMain: false })
   }
 
   function removeItem(idx) {
@@ -68,9 +67,9 @@ export default function MenuPage() {
     if (form.items.length === 0) return alert('메뉴 항목을 하나 이상 추가하세요.')
     setSubmitting(true)
     try {
-      await api.post('/admin/menus', { ...form, date })
+      await api.post('/admin/menus', { ...form, date, price: form.price ? Number(form.price) : null })
       setShowForm(false)
-      setForm({ mealType: 'LUNCH', isPublished: false, items: [] })
+      setForm({ mealType: 'LUNCH', price: '', isPublished: false, items: [] })
       fetchMenus()
     } catch (err) {
       alert(err.response?.data?.message || '등록에 실패했습니다.')
@@ -159,7 +158,14 @@ export default function MenuPage() {
               return (
                 <div key={mt.value} className="bg-white rounded-2xl shadow-sm border p-5">
                   <div className="flex items-center justify-between mb-3">
-                    <span className="font-semibold text-gray-700">{mt.label}</span>
+                    <div className="flex items-center gap-2">
+                      <span className="font-semibold text-gray-700">{mt.label}</span>
+                      {menu.price && (
+                        <span className="text-sm text-blue-600 font-medium">
+                          {menu.price.toLocaleString()}원
+                        </span>
+                      )}
+                    </div>
                     <div className="flex items-center gap-2">
                       <button
                         onClick={() => togglePublish(menu)}
@@ -221,6 +227,18 @@ export default function MenuPage() {
                 </select>
               </div>
 
+              {/* 가격 */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">가격 (원)</label>
+                <input
+                  type="number"
+                  placeholder="예: 5000"
+                  value={form.price}
+                  onChange={(e) => setForm({ ...form, price: e.target.value })}
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+
               {/* 메뉴 항목 추가 */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">메뉴 항목</label>
@@ -235,17 +253,10 @@ export default function MenuPage() {
                     />
                     <input
                       type="number"
-                      placeholder="가격"
-                      value={newItem.price}
-                      onChange={(e) => setNewItem({ ...newItem, price: e.target.value })}
-                      className="w-24 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
-                    <input
-                      type="number"
                       placeholder="kcal"
                       value={newItem.calories}
                       onChange={(e) => setNewItem({ ...newItem, calories: e.target.value })}
-                      className="w-20 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-24 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />
                   </div>
                   <div className="flex items-center justify-between">
@@ -276,7 +287,6 @@ export default function MenuPage() {
                         <span className={item.isMain ? 'font-medium' : ''}>
                           {item.isMain && <span className="text-blue-500 mr-1">★</span>}
                           {item.name}
-                          {item.price && <span className="text-gray-400 ml-2">{item.price.toLocaleString()}원</span>}
                           {item.calories && <span className="text-gray-400 ml-1">{item.calories}kcal</span>}
                         </span>
                         <button
