@@ -92,6 +92,88 @@ router.delete('/menus/:menuId/items/:itemId', async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+// 카테고리 목록 (음식 항목 포함)
+router.get('/categories', async (req, res, next) => {
+  try {
+    const categories = await prisma.category.findMany({
+      where: { cafeteriaId: req.admin.cafeteriaId },
+      include: { items: { orderBy: { order: 'asc' } } },
+      orderBy: { order: 'asc' },
+    });
+    res.json({ success: true, data: categories });
+  } catch (err) { next(err); }
+});
+
+// 카테고리 등록
+router.post('/categories', async (req, res, next) => {
+  try {
+    const { name, order } = req.body;
+    const category = await prisma.category.create({
+      data: { cafeteriaId: req.admin.cafeteriaId, name, order: order ?? 0 },
+      include: { items: true },
+    });
+    res.status(201).json({ success: true, data: category });
+  } catch (err) { next(err); }
+});
+
+// 카테고리 수정
+router.put('/categories/:id', async (req, res, next) => {
+  try {
+    const { name, order } = req.body;
+    const category = await prisma.category.updateMany({
+      where: { id: Number(req.params.id), cafeteriaId: req.admin.cafeteriaId },
+      data: { name, order },
+    });
+    res.json({ success: true, data: category });
+  } catch (err) { next(err); }
+});
+
+// 카테고리 삭제 (음식 항목 cascade)
+router.delete('/categories/:id', async (req, res, next) => {
+  try {
+    await prisma.category.deleteMany({
+      where: { id: Number(req.params.id), cafeteriaId: req.admin.cafeteriaId },
+    });
+    res.json({ success: true });
+  } catch (err) { next(err); }
+});
+
+// 카테고리 음식 항목 등록
+router.post('/categories/:id/items', async (req, res, next) => {
+  try {
+    const { name, calories, isMain, order } = req.body;
+    // 해당 카테고리가 내 식당 소속인지 확인
+    const category = await prisma.category.findFirst({
+      where: { id: Number(req.params.id), cafeteriaId: req.admin.cafeteriaId },
+    });
+    if (!category) return res.status(404).json({ success: false, message: 'Not found' });
+    const item = await prisma.categoryItem.create({
+      data: { categoryId: Number(req.params.id), name, calories: calories ?? null, isMain: isMain ?? false, order: order ?? 0 },
+    });
+    res.status(201).json({ success: true, data: item });
+  } catch (err) { next(err); }
+});
+
+// 카테고리 음식 항목 수정
+router.put('/categories/:categoryId/items/:itemId', async (req, res, next) => {
+  try {
+    const { name, calories, isMain, order } = req.body;
+    const item = await prisma.categoryItem.update({
+      where: { id: Number(req.params.itemId) },
+      data: { name, calories: calories ?? null, isMain: isMain ?? false, order },
+    });
+    res.json({ success: true, data: item });
+  } catch (err) { next(err); }
+});
+
+// 카테고리 음식 항목 삭제
+router.delete('/categories/:categoryId/items/:itemId', async (req, res, next) => {
+  try {
+    await prisma.categoryItem.delete({ where: { id: Number(req.params.itemId) } });
+    res.json({ success: true });
+  } catch (err) { next(err); }
+});
+
 // 식당 설정 조회
 router.get('/cafeteria', async (req, res, next) => {
   try {

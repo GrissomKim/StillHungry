@@ -24,6 +24,7 @@ export default function MenuPage() {
   const [menus, setMenus] = useState([])
   const [loading, setLoading] = useState(false)
   const [defaultPrices, setDefaultPrices] = useState({})
+  const [categories, setCategories] = useState([])
 
   // 메뉴 등록 폼
   const [showForm, setShowForm] = useState(false)
@@ -35,6 +36,9 @@ export default function MenuPage() {
     fetchMenus()
     api.get('/admin/cafeteria')
       .then(({ data }) => setDefaultPrices(data.data))
+      .catch(() => {})
+    api.get('/admin/categories')
+      .then(({ data }) => setCategories(data.data))
       .catch(() => {})
   }, [date])
 
@@ -260,9 +264,54 @@ export default function MenuPage() {
                 />
               </div>
 
-              {/* 메뉴 항목 추가 */}
+              {/* 카테고리에서 선택 */}
+              {categories.length > 0 && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">카테고리에서 선택</label>
+                  <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
+                    {categories.map((cat) => (
+                      <div key={cat.id}>
+                        <p className="text-xs font-semibold text-gray-500 uppercase mb-1">{cat.name}</p>
+                        <div className="flex flex-wrap gap-2">
+                          {cat.items.map((item) => {
+                            const already = form.items.some((i) => i.name === item.name)
+                            return (
+                              <button
+                                key={item.id}
+                                type="button"
+                                disabled={already}
+                                onClick={() => {
+                                  if (already) return
+                                  setForm((f) => ({
+                                    ...f,
+                                    items: [
+                                      ...f.items,
+                                      { name: item.name, calories: item.calories, isMain: item.isMain, order: f.items.length },
+                                    ],
+                                  }))
+                                }}
+                                className={`text-xs px-3 py-1.5 rounded-full border transition ${
+                                  already
+                                    ? 'bg-blue-50 border-blue-300 text-blue-400 cursor-default'
+                                    : 'bg-white border-gray-300 text-gray-600 hover:border-blue-400 hover:text-blue-600'
+                                }`}
+                              >
+                                {item.isMain && <span className="mr-0.5">★</span>}
+                                {item.name}
+                                {already && ' ✓'}
+                              </button>
+                            )
+                          })}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* 메뉴 항목 직접 입력 */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">메뉴 항목</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">직접 입력</label>
                 <div className="space-y-2">
                   <div className="flex gap-2">
                     <input
