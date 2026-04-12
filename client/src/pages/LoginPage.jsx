@@ -16,7 +16,13 @@ export default function LoginPage() {
       const { data } = await api.post('/auth/login', form)
       localStorage.setItem('accessToken', data.data.accessToken)
       localStorage.setItem('refreshToken', data.data.refreshToken)
-      navigate('/admin/menus')
+      // JWT payload에서 role 확인 (base64 디코딩)
+      const payload = JSON.parse(atob(data.data.accessToken.split('.')[1]))
+      if (payload.role === 'SUPER_ADMIN') {
+        navigate('/super')
+      } else {
+        navigate('/admin/menus')
+      }
     } catch (err) {
       setError(err.response?.data?.message || '로그인에 실패했습니다.')
     } finally {
