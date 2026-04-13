@@ -1,0 +1,27 @@
+{
+  "name": "stillhungry",
+  "version": "1.0.0",
+  "description": "구로디지털단지 & 가산디지털단지 구내식당 메뉴 통합 조회 서비스",
+  "main": "index.js",
+  "directories": {
+    "doc": "docs"
+  },
+  "scripts": {
+    "dev": "concurrently --names \"server,client\" --prefix-colors \"blue,green\" \"npm run dev --prefix server\" \"npm run dev --prefix client\""
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/GrissomKim/StillHungry.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/GrissomKim/StillHungry/issues"
+  },
+  "homepage": "https://github.com/GrissomKim/StillHungry#readme",
+  "devDependencies": {
+    "concurrently": "^9.2.1"
+  }
+}
