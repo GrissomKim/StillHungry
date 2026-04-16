@@ -41,6 +41,8 @@ model Cafeteria {
   address               String?
   phone                 String?
   isActive              Boolean   @default(true)
+  latitude              Float?
+  longitude             Float?
   defaultBreakfastPrice Int?
   defaultLunchPrice     Int?
   defaultDinnerPrice    Int?

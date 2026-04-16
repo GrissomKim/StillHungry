@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import api from '../api/client'
+import { useKakaoMap, useKakaoGeocoder } from '../hooks/useKakaoMap'
 
 const MEAL_FIELDS = [
   { key: 'defaultBreakfastPrice', label: '조식 기본 금액' },
@@ -21,6 +22,15 @@ export default function SettingsPage() {
   const [priceSaving, setPriceSaving] = useState(false)
   const [priceSaved, setPriceSaved] = useState(false)
 
+  // 위치
+  const [locationForm, setLocationForm] = useState({ address: '', lat: null, lng: null })
+  const [locationQuery, setLocationQuery] = useState('')
+  const [locationSaving, setLocationSaving] = useState(false)
+  const [locationSaved, setLocationSaved] = useState(false)
+  const [locationError, setLocationError] = useState('')
+  const geocode = useKakaoGeocoder()
+  const mapContainerRef = useKakaoMap(locationForm.lat, locationForm.lng)
+
   // 카테고리
   const [categories, setCategories] = useState([])
   const [catLoading, setCatLoading] = useState(true)
@@ -39,6 +49,9 @@ export default function SettingsPage() {
           defaultLunchPrice:     c.defaultLunchPrice ?? '',
           defaultDinnerPrice:    c.defaultDinnerPrice ?? '',
         })
+        if (c.latitude != null && c.longitude != null) {
+          setLocationForm({ address: c.address ?? '', lat: c.latitude, lng: c.longitude })
+        }
       })
       .catch(() => {})
       .finally(() => setPriceLoading(false))
@@ -55,6 +68,36 @@ export default function SettingsPage() {
       setCategories([])
     } finally {
       setCatLoading(false)
+    }
+  }
+
+  async function handleLocationSearch() {
+    if (!locationQuery.trim()) return
+    setLocationError('')
+    if (!geocode) { setLocationError('카카오맵 SDK가 아직 로드되지 않았습니다.'); return }
+    try {
+      const result = await geocode(locationQuery.trim())
+      setLocationForm({ address: result.roadAddress || result.jibunAddress, lat: result.lat, lng: result.lng })
+    } catch {
+      setLocationError('주소를 찾을 수 없습니다. 다시 확인해주세요.')
+    }
+  }
+
+  async function handleLocationSave() {
+    if (locationForm.lat == null || locationForm.lng == null) return
+    setLocationSaving(true)
+    setLocationSaved(false)
+    try {
+      await api.put('/admin/cafeteria', {
+        latitude: locationForm.lat,
+        longitude: locationForm.lng,
+      })
+      setLocationSaved(true)
+      setTimeout(() => setLocationSaved(false), 2000)
+    } catch (err) {
+      alert(err.response?.data?.message || '저장에 실패했습니다.')
+    } finally {
+      setLocationSaving(false)
     }
   }
 
@@ -203,6 +246,60 @@ export default function SettingsPage() {
                 {priceSaved && <span className="text-sm text-green-600 font-medium">저장되었습니다.</span>}
               </div>
             </form>
+          )}
+        </section>
+
+        {/* 식당 위치 설정 */}
+        <section>
+          <h2 className="text-base font-semibold text-gray-700 mb-1">식당 위치</h2>
+          <p className="text-sm text-gray-400 mb-4">주소를 검색하면 지도에 핀이 표시됩니다.</p>
+
+          <div className="flex gap-2 mb-3">
+            <input
+              type="text"
+              placeholder="주소 검색 (예: 가산디지털단지역)"
+              value={locationQuery}
+              onChange={(e) => setLocationQuery(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), handleLocationSearch())}
+              className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+            <button
+              onClick={handleLocationSearch}
+              className="bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium px-4 py-2 rounded-lg transition shrink-0"
+            >
+              검색
+            </button>
+          </div>
+
+          {locationError && (
+            <p className="text-xs text-red-500 mb-2">{locationError}</p>
+          )}
+
+          {locationForm.lat != null ? (
+            <>
+              <div
+                ref={mapContainerRef}
+                className="w-full rounded-xl overflow-hidden border mb-3"
+                style={{ height: '220px' }}
+              />
+              <p className="text-xs text-gray-500 mb-3">
+                📍 {locationForm.address || `${locationForm.lat}, ${locationForm.lng}`}
+              </p>
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={handleLocationSave}
+                  disabled={locationSaving}
+                  className="bg-blue-600 hover:bg-blue-700 disabled:bg-blue-300 text-white text-sm font-medium px-6 py-2 rounded-lg transition"
+                >
+                  {locationSaving ? '저장 중...' : '위치 저장'}
+                </button>
+                {locationSaved && <span className="text-sm text-green-600 font-medium">저장되었습니다.</span>}
+              </div>
+            </>
+          ) : (
+            <div className="bg-white rounded-xl border h-[220px] flex items-center justify-center text-gray-300 text-sm">
+              주소를 검색하면 지도가 표시됩니다
+            </div>
           )}
         </section>
 

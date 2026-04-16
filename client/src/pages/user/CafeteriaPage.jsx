@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import api from '../../api/client'
 import { useFavorites } from '../../hooks/useFavorites'
+import { useKakaoMap } from '../../hooks/useKakaoMap'
 
 const MEAL_TYPES = [
   { value: 'BREAKFAST', label: '조식' },
@@ -28,12 +29,17 @@ export default function CafeteriaPage() {
   const cafId = Number(id)
 
   const [cafeteria, setCafeteria] = useState(null)
-  const [tab, setTab] = useState('menu') // 'menu' | 'notice'
+  const [tab, setTab] = useState('menu') // 'menu' | 'notice' | 'location'
   const [date, setDate] = useState(today())
   const [menus, setMenus] = useState([])
   const [notices, setNotices] = useState([])
   const [menuLoading, setMenuLoading] = useState(false)
   const [noticeLoading, setNoticeLoading] = useState(false)
+
+  const mapContainerRef = useKakaoMap(
+    cafeteria?.latitude ?? null,
+    cafeteria?.longitude ?? null,
+  )
 
   useEffect(() => {
     api.get(`/public/cafeterias/${id}`)
@@ -121,6 +127,18 @@ export default function CafeteriaPage() {
           >
             공지/이벤트
           </button>
+          {cafeteria?.latitude != null && (
+            <button
+              onClick={() => setTab('location')}
+              className={`flex-1 py-3 text-sm font-medium transition ${
+                tab === 'location'
+                  ? 'text-blue-600 border-b-2 border-blue-600'
+                  : 'text-gray-400 hover:text-gray-600'
+              }`}
+            >
+              위치
+            </button>
+          )}
         </div>
       </div>
 
@@ -258,6 +276,27 @@ export default function CafeteriaPage() {
               </div>
             )}
           </>
+        )}
+
+        {/* 위치 탭 */}
+        {tab === 'location' && (
+          <div>
+            <div
+              ref={mapContainerRef}
+              className="w-full rounded-2xl overflow-hidden border shadow-sm"
+              style={{ height: '320px' }}
+            />
+            {cafeteria?.address && (
+              <p className="text-sm text-gray-500 mt-3">
+                📍 {cafeteria.address}
+              </p>
+            )}
+            {cafeteria?.phone && (
+              <p className="text-sm text-gray-500 mt-1">
+                📞 {cafeteria.phone}
+              </p>
+            )}
+          </div>
         )}
       </main>
     </div>

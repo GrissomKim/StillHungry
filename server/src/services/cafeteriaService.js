@@ -7,6 +7,7 @@ async function getCafeteriaSettings(cafeteriaId) {
     where: { id: cafeteriaId },
     select: {
       id: true, name: true, description: true, address: true, phone: true,
+      latitude: true, longitude: true,
       defaultBreakfastPrice: true, defaultLunchPrice: true, defaultDinnerPrice: true,
     },
   });
@@ -18,13 +19,15 @@ async function getCafeteriaSettings(cafeteriaId) {
   return cafeteria;
 }
 
-async function updateCafeteriaSettings(cafeteriaId, { defaultBreakfastPrice, defaultLunchPrice, defaultDinnerPrice }) {
+async function updateCafeteriaSettings(cafeteriaId, { defaultBreakfastPrice, defaultLunchPrice, defaultDinnerPrice, latitude, longitude }) {
   return prisma.cafeteria.update({
     where: { id: cafeteriaId },
     data: {
       defaultBreakfastPrice: defaultBreakfastPrice != null ? Number(defaultBreakfastPrice) : null,
       defaultLunchPrice:     defaultLunchPrice     != null ? Number(defaultLunchPrice)     : null,
       defaultDinnerPrice:    defaultDinnerPrice    != null ? Number(defaultDinnerPrice)    : null,
+      latitude:              latitude  != null ? Number(latitude)  : null,
+      longitude:             longitude != null ? Number(longitude) : null,
     },
   });
 }
