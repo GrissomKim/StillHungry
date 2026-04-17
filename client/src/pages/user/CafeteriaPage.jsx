@@ -11,6 +11,7 @@ const MEAL_TYPES = [
 ]
 
 const TYPE_LABELS = { NOTICE: '공지', EVENT: '이벤트' }
+const DAY_KO = ['일', '월', '화', '수', '목', '금', '토']
 
 function today() {
   return new Date().toISOString().slice(0, 10)
@@ -19,6 +20,36 @@ function today() {
 function formatDate(dateStr) {
   const d = new Date(dateStr)
   return `${d.getMonth() + 1}월 ${d.getDate()}일`
+}
+
+// 해당 날짜가 속한 주의 월요일 반환
+function getMondayOf(dateStr) {
+  const d = new Date(dateStr)
+  const day = d.getDay()
+  d.setDate(d.getDate() - (day === 0 ? 6 : day - 1))
+  return d.toISOString().slice(0, 10)
+}
+
+// 월요일부터 7일치 날짜 배열
+function getWeekDates(mondayStr) {
+  return Array.from({ length: 7 }, (_, i) => {
+    const d = new Date(mondayStr)
+    d.setDate(d.getDate() + i)
+    return d.toISOString().slice(0, 10)
+  })
+}
+
+function addDays(dateStr, n) {
+  const d = new Date(dateStr)
+  d.setDate(d.getDate() + n)
+  return d.toISOString().slice(0, 10)
+}
+
+function formatWeekRange(mondayStr) {
+  const mon = new Date(mondayStr)
+  const sun = new Date(mondayStr)
+  sun.setDate(mon.getDate() + 6)
+  return `${mon.getMonth() + 1}월 ${mon.getDate()}일 ~ ${sun.getMonth() + 1}월 ${sun.getDate()}일`
 }
 
 export default function CafeteriaPage() {
@@ -30,10 +61,14 @@ export default function CafeteriaPage() {
 
   const [cafeteria, setCafeteria] = useState(null)
   const [tab, setTab] = useState('menu') // 'menu' | 'notice' | 'location'
+  const [view, setView] = useState('day')  // 'day' | 'week'
   const [date, setDate] = useState(today())
+  const [weekStart, setWeekStart] = useState(getMondayOf(today()))
   const [menus, setMenus] = useState([])
+  const [weekMenus, setWeekMenus] = useState([])
   const [notices, setNotices] = useState([])
   const [menuLoading, setMenuLoading] = useState(false)
+  const [weekLoading, setWeekLoading] = useState(false)
   const [noticeLoading, setNoticeLoading] = useState(false)
 
   const mapContainerRef = useKakaoMap(
@@ -54,6 +89,17 @@ export default function CafeteriaPage() {
       .catch(() => setMenus([]))
       .finally(() => setMenuLoading(false))
   }, [id, date])
+
+  useEffect(() => {
+    if (tab !== 'menu' || view !== 'week') return
+    setWeekLoading(true)
+    const from = weekStart
+    const to = addDays(weekStart, 6)
+    api.get(`/public/cafeterias/${id}/menus`, { params: { from, to } })
+      .then(({ data }) => setWeekMenus(data.data))
+      .catch(() => setWeekMenus([]))
+      .finally(() => setWeekLoading(false))
+  }, [id, tab, view, weekStart])
 
   useEffect(() => {
     if (tab !== 'notice') return
@@ -146,6 +192,119 @@ export default function CafeteriaPage() {
         {/* 메뉴 탭 */}
         {tab === 'menu' && (
           <>
+            {/* Day / Week 토글 */}
+            <div className="flex justify-end mb-4">
+              <div className="flex bg-gray-100 rounded-lg p-0.5 gap-0.5">
+                {['day', 'week'].map((v) => (
+                  <button
+                    key={v}
+                    onClick={() => setView(v)}
+                    className={`px-4 py-1.5 rounded-md text-sm font-medium transition ${
+                      view === v ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'
+                    }`}
+                  >
+                    {v === 'day' ? 'Day' : 'Week'}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* ── 주간 뷰 ── */}
+            {view === 'week' && (
+              <>
+                {/* 주 네비게이션 */}
+                <div className="flex items-center justify-between mb-4">
+                  <button
+                    onClick={() => setWeekStart(addDays(weekStart, -7))}
+                    className="w-9 h-9 rounded-full bg-white border flex items-center justify-center text-gray-500 hover:border-blue-400 transition"
+                  >‹</button>
+                  <span className="text-sm font-semibold text-gray-700">{formatWeekRange(weekStart)}</span>
+                  <button
+                    onClick={() => setWeekStart(addDays(weekStart, 7))}
+                    className="w-9 h-9 rounded-full bg-white border flex items-center justify-center text-gray-500 hover:border-blue-400 transition"
+                  >›</button>
+                </div>
+
+                {weekLoading ? (
+                  <div className="space-y-3">
+                    {[1,2,3,4,5].map((i) => (
+                      <div key={i} className="bg-white rounded-2xl border h-24 animate-pulse" />
+                    ))}
+                  </div>
+                ) : (() => {
+                  const allDates = getWeekDates(weekStart)
+                  const weekdays = allDates.slice(0, 5)
+                  const weekend = allDates.slice(5)
+                  const hasWeekendData = weekend.some((d) => weekMenus.some((m) => m.date.slice(0, 10) === d))
+                  const displayDates = hasWeekendData ? allDates : weekdays
+
+                  return (
+                    <div className="space-y-3">
+                      {displayDates.map((d) => {
+                        const dayMenus = weekMenus.filter((m) => m.date.slice(0, 10) === d)
+                        const jsDate = new Date(d)
+                        const isToday = d === today()
+                        const dayNum = jsDate.getDay()
+                        const isSat = dayNum === 6
+                        const isSun = dayNum === 0
+
+                        return (
+                          <div
+                            key={d}
+                            className={`bg-white rounded-2xl border shadow-sm overflow-hidden ${isToday ? 'border-blue-400 ring-1 ring-blue-400' : ''}`}
+                          >
+                            {/* 날짜 헤더 */}
+                            <div className={`px-4 py-2 flex items-center gap-2 ${isToday ? 'bg-blue-50' : 'bg-gray-50'}`}>
+                              <span className={`text-sm font-bold ${isSat ? 'text-blue-500' : isSun ? 'text-red-500' : isToday ? 'text-blue-600' : 'text-gray-700'}`}>
+                                {DAY_KO[dayNum]} {jsDate.getDate()}
+                              </span>
+                              {isToday && <span className="text-xs bg-blue-500 text-white rounded-full px-2 py-0.5">오늘</span>}
+                            </div>
+
+                            {/* 메뉴 */}
+                            <div className="px-4 py-3">
+                              {dayMenus.length === 0 ? (
+                                <p className="text-xs text-gray-300">등록된 메뉴 없음</p>
+                              ) : (
+                                <div className="space-y-1.5">
+                                  {MEAL_TYPES.map((mt) => {
+                                    const menu = dayMenus.find((m) => m.mealType === mt.value)
+                                    if (!menu) return null
+                                    const mainItems = menu.items.filter((i) => i.isMain)
+                                    const sideItems = menu.items.filter((i) => !i.isMain)
+                                    return (
+                                      <div key={mt.value} className="flex items-start gap-2">
+                                        <span className="text-xs font-semibold text-blue-500 w-6 shrink-0 pt-0.5">{mt.label}</span>
+                                        <p className="text-xs text-gray-600 leading-relaxed">
+                                          {mainItems.map((item, i) => (
+                                            <span key={item.id} className="font-semibold text-gray-800">
+                                              {i > 0 && ' · '}{item.name}
+                                            </span>
+                                          ))}
+                                          {mainItems.length > 0 && sideItems.length > 0 && <span className="text-gray-300"> · </span>}
+                                          {sideItems.map((item, i) => (
+                                            <span key={item.id}>
+                                              {i > 0 && <span className="text-gray-300"> · </span>}{item.name}
+                                            </span>
+                                          ))}
+                                        </p>
+                                      </div>
+                                    )
+                                  })}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  )
+                })()}
+              </>
+            )}
+
+            {/* ── 일간 뷰 ── */}
+            {view === 'day' && <>
             {/* 날짜 네비게이션 */}
             <div className="flex items-center justify-between mb-5">
               <button
@@ -229,6 +388,7 @@ export default function CafeteriaPage() {
                 })}
               </div>
             )}
+            </>}
           </>
         )}
 

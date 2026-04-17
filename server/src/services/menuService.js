@@ -73,16 +73,24 @@ async function deleteMenuSuper(id) {
 
 // ── Public ─────────────────────────────────────────
 
-async function getPublicMenus(cafeteriaId, date) {
-  const d = date ? new Date(date) : new Date();
+async function getPublicMenus(cafeteriaId, { date, from, to } = {}) {
+  let dateFilter;
+  if (from && to) {
+    dateFilter = {
+      gte: new Date(from + 'T00:00:00'),
+      lte: new Date(to  + 'T23:59:59'),
+    };
+  } else {
+    const d = new Date(date || new Date().toISOString().slice(0, 10));
+    dateFilter = {
+      gte: new Date(d.toISOString().slice(0, 10) + 'T00:00:00'),
+      lte: new Date(d.toISOString().slice(0, 10) + 'T23:59:59'),
+    };
+  }
   return prisma.menu.findMany({
-    where: {
-      cafeteriaId,
-      date: { gte: new Date(d.setHours(0,0,0,0)), lt: new Date(d.setHours(24,0,0,0)) },
-      isPublished: true,
-    },
+    where: { cafeteriaId, date: dateFilter, isPublished: true },
     include: { items: { orderBy: { order: 'asc' } } },
-    orderBy: { mealType: 'asc' },
+    orderBy: [{ date: 'asc' }, { mealType: 'asc' }],
   });
 }
 

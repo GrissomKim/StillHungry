@@ -39,7 +39,8 @@ router.get('/cafeterias/:id', async (req, res, next) => {
 // 날짜별 메뉴 조회 (?date=YYYY-MM-DD)
 router.get('/cafeterias/:id/menus', async (req, res, next) => {
   try {
-    const data = await menuService.getPublicMenus(Number(req.params.id), req.query.date);
+    const { date, from, to } = req.query;
+    const data = await menuService.getPublicMenus(Number(req.params.id), { date, from, to });
     res.json({ success: true, data });
   } catch (err) { next(err); }
 });
