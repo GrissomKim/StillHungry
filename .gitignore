@@ -29,3 +29,6 @@ Thumbs.db
 # Temp
 *.tmp
 *.temp
+
+# Kubernetes secrets
+server/k8s/secret.yaml
