@@ -74,12 +74,11 @@ export default function SettingsPage() {
   async function handleLocationSearch() {
     if (!locationQuery.trim()) return
     setLocationError('')
-    if (!geocode) { setLocationError('카카오맵 SDK가 아직 로드되지 않았습니다.'); return }
     try {
       const result = await geocode(locationQuery.trim())
       setLocationForm({ address: result.roadAddress || result.jibunAddress, lat: result.lat, lng: result.lng })
-    } catch {
-      setLocationError('주소를 찾을 수 없습니다. 다시 확인해주세요.')
+    } catch (err) {
+      setLocationError(err.message || '주소 검색에 실패했습니다.')
     }
   }
 
